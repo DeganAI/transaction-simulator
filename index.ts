@@ -485,9 +485,13 @@ honoApp.all('/entrypoints/simulate-transaction/invoke', async (c) => {
 
   const paymentHeader = c.req.header('X-PAYMENT');
   const acceptHeader = c.req.header('Accept') || '';
+  const contentType = c.req.header('Content-Type') || '';
 
   // Return HTML with OG tags for browsers/x402scan validation
-  if (!paymentHeader && acceptHeader.includes('text/html')) {
+  // Default to HTML unless explicitly requesting JSON
+  const wantsJson = contentType.includes('application/json') || acceptHeader.includes('application/json');
+
+  if (!paymentHeader && !wantsJson) {
     return c.html(`<!DOCTYPE html>
 <html lang="en">
 <head>
