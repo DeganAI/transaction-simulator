@@ -498,7 +498,95 @@ app.addEntrypoint({
 console.log('[STARTUP] Entrypoints defined ✓');
 
 // ============================================
-// STEP 4.5: Custom Routes (after agent-kit registration)
+// STEP 4.5: Middleware to fix agent-kit's outputSchema
+// ============================================
+
+// Agent-kit only generates "input" in outputSchema, but x402scan requires "output" field too
+// This middleware intercepts 402 responses and adds the output schema
+honoApp.use('/entrypoints/*/invoke', async (c, next) => {
+  await next();
+
+  // Only modify 402 responses
+  if (c.res.status === 402) {
+    const body = await c.res.json();
+
+    // Add output field to outputSchema if it's missing
+    if (body.accepts && Array.isArray(body.accepts)) {
+      body.accepts.forEach((accept: any) => {
+        if (accept.outputSchema && accept.outputSchema.input && !accept.outputSchema.output) {
+          accept.outputSchema.output = {
+            type: 'object',
+            description: 'Transaction simulation results',
+            required: ['success', 'gas_used', 'gas_cost_eth', 'gas_cost_usd', 'chain_id'],
+            properties: {
+              success: {
+                type: 'boolean',
+                description: 'Whether the transaction is expected to succeed'
+              },
+              gas_used: {
+                type: 'integer',
+                description: 'Estimated gas units consumed'
+              },
+              gas_cost_eth: {
+                type: 'number',
+                description: 'Gas cost in ETH/native currency'
+              },
+              gas_cost_usd: {
+                type: 'number',
+                description: 'Gas cost in USD'
+              },
+              gas_price_gwei: {
+                type: 'number',
+                description: 'Current gas price in gwei'
+              },
+              error: {
+                type: ['string', 'null'],
+                description: 'Error message if simulation failed'
+              },
+              asset_changes: {
+                type: 'array',
+                description: 'Detected asset transfers and changes',
+                items: {
+                  type: 'object',
+                  properties: {
+                    asset_type: { type: 'string' },
+                    change_type: { type: 'string' },
+                    from: { type: 'string' },
+                    to: { type: 'string' },
+                    amount_wei: { type: 'string' },
+                    amount_eth: { type: 'number' },
+                    symbol: { type: 'string' }
+                  }
+                }
+              },
+              warnings: {
+                type: 'array',
+                description: 'Warnings and alerts about the transaction',
+                items: { type: 'string' }
+              },
+              chain_id: {
+                type: 'integer',
+                description: 'Chain ID where simulation was performed'
+              },
+              simulation_method: {
+                type: 'string',
+                description: 'Method used for simulation (eth_call, tenderly, etc.)'
+              }
+            }
+          };
+          console.log('[MIDDLEWARE] Added output schema to 402 response');
+        }
+      });
+    }
+
+    return c.json(body, 402);
+  }
+});
+
+console.log('[STARTUP] outputSchema middleware installed ✓');
+
+// ============================================
+// STEP 4.6: Custom Routes (after agent-kit registration)
 // ============================================
 
 // Custom root route with Open Graph tags for x402scan validation
