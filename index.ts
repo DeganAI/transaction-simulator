@@ -353,15 +353,34 @@ console.log('[STARTUP] Step 5: Defining entrypoints...');
 honoApp.get('/health', (c) => {
   console.log('[HEALTH] Health check requested');
   return c.json({
-    status: 'healthy',
-    service: 'transaction-simulator',
+    ok: true,
     version: '1.0.0',
-    runtime: typeof Bun !== 'undefined' ? 'Bun' : 'Node.js',
-    free_mode: false,
-    supported_chains: supportedChainIds.length,
-    chain_ids: supportedChainIds,
-    timestamp: new Date().toISOString(),
   });
+});
+
+// Manual .well-known/x402 endpoint (agent-kit should handle this, but adding explicitly)
+honoApp.get('/.well-known/x402', (c) => {
+  console.log('[402] .well-known/x402 endpoint requested');
+  return c.json(
+    {
+      x402Version: 1,
+      accepts: [
+        {
+          scheme: 'exact',
+          network: 'base',
+          maxAmountRequired: '30000', // 0.03 USDC
+          resource: 'https://transaction-simulator-production.up.railway.app/simulate-transaction-x402',
+          description:
+            'Simulate transactions before execution to preview outcomes and estimate gas',
+          mimeType: 'application/json',
+          payTo: WALLET_ADDRESS,
+          maxTimeoutSeconds: 300,
+          asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
+        },
+      ],
+    },
+    402
+  );
 });
 
 // SEPARATE x402 endpoint for x402scan registration (bypasses agent-kit)
