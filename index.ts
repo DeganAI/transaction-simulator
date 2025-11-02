@@ -1,4 +1,5 @@
 import { createAgentApp } from '@lucid-dreams/agent-kit';
+import { Hono } from 'hono';
 import { createPublicClient, http, type Address, type Hash, type Hex, formatEther, parseGwei, formatGwei } from 'viem';
 import { mainnet, bsc, polygon, arbitrum, optimism, base, avalanche } from 'viem/chains';
 
@@ -336,65 +337,8 @@ const app = createAgentApp({
 
 console.log('[STARTUP] Agent app created ✓');
 
-// Access the underlying Hono app
+// Access the underlying Hono app for registration
 const honoApp = app.app;
-
-// NUCLEAR OPTION: Directly override root route by registering it again
-// Hono allows re-registering routes, last one wins for the same path+method
-console.log('[CUSTOM] Overriding agent-kit root route with custom HTML');
-honoApp.get('/', (c) => {
-  console.log('[CUSTOM] ✓ Serving custom root HTML with OG tags');
-  return c.html(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Transaction Simulator - x402 Agent</title>
-  <meta name="description" content="Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction across 7 EVM chains">
-
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://transaction-simulator-production.up.railway.app/">
-  <meta property="og:title" content="Transaction Simulator - x402 Agent">
-  <meta property="og:description" content="Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction across 7 EVM chains">
-  <meta property="og:image" content="https://transaction-simulator-production.up.railway.app/og-image.png">
-
-  <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://transaction-simulator-production.up.railway.app/">
-  <meta property="twitter:title" content="Transaction Simulator - x402 Agent">
-  <meta property="twitter:description" content="Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction across 7 EVM chains">
-  <meta property="twitter:image" content="https://transaction-simulator-production.up.railway.app/og-image.png">
-
-  <style>
-    body { font-family: system-ui; max-width: 800px; margin: 40px auto; padding: 20px; }
-    h1 { color: #2563eb; }
-    .endpoint { background: #f3f4f6; padding: 10px; border-radius: 8px; margin: 10px 0; }
-    code { background: #e5e7eb; padding: 2px 6px; border-radius: 4px; }
-  </style>
-</head>
-<body>
-  <h1>Transaction Simulator</h1>
-  <p>Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction</p>
-
-  <h2>x402 Agent Endpoints</h2>
-  <div class="endpoint">
-    <strong>Invoke:</strong> <code>POST /entrypoints/simulate-transaction/invoke</code>
-  </div>
-  <div class="endpoint">
-    <strong>Agent Discovery:</strong> <code>GET /.well-known/agent.json</code>
-  </div>
-  <div class="endpoint">
-    <strong>Health:</strong> <code>GET /health</code>
-  </div>
-
-  <h2>Supported Chains</h2>
-  <p>Ethereum, BSC, Polygon, Arbitrum, Optimism, Base, Avalanche</p>
-
-  <p><small>Powered by agent-kit + viem</small></p>
-</body>
-</html>`);
-});
 
 // ============================================
 // STEP 4: Define Entrypoints
@@ -773,29 +717,100 @@ honoApp.get('/og-image.png', (c) => {
 });
 
 // ============================================
-// STEP 5: Start Server (Auto-detect runtime)
+// STEP 5: Create Wrapper App for Custom Root HTML
 // ============================================
-console.log('[STARTUP] Step 5: Starting server...');
+console.log('[STARTUP] Step 5: Creating wrapper app with custom root HTML...');
+
+// Create wrapper Hono app that intercepts root route BEFORE agent-kit
+const wrapperApp = new Hono();
+
+// Handle root route with custom HTML and OG metadata tags
+wrapperApp.get('/', (c) => {
+  console.log('[WRAPPER] ✓ Serving custom root HTML with OG tags');
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transaction Simulator - x402 Agent</title>
+  <meta name="description" content="Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction across 7 EVM chains">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://transaction-simulator-production.up.railway.app/">
+  <meta property="og:title" content="Transaction Simulator - x402 Agent">
+  <meta property="og:description" content="Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction across 7 EVM chains">
+  <meta property="og:image" content="https://transaction-simulator-production.up.railway.app/og-image.png">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://transaction-simulator-production.up.railway.app/">
+  <meta property="twitter:title" content="Transaction Simulator - x402 Agent">
+  <meta property="twitter:description" content="Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction across 7 EVM chains">
+  <meta property="twitter:image" content="https://transaction-simulator-production.up.railway.app/og-image.png">
+
+  <style>
+    body { font-family: system-ui; max-width: 800px; margin: 40px auto; padding: 20px; }
+    h1 { color: #2563eb; }
+    .endpoint { background: #f3f4f6; padding: 10px; border-radius: 8px; margin: 10px 0; }
+    code { background: #e5e7eb; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Transaction Simulator</h1>
+  <p>Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction</p>
+
+  <h2>x402 Agent Endpoints</h2>
+  <div class="endpoint">
+    <strong>Invoke:</strong> <code>POST /entrypoints/simulate-transaction/invoke</code>
+  </div>
+  <div class="endpoint">
+    <strong>Agent Discovery:</strong> <code>GET /.well-known/agent.json</code>
+  </div>
+  <div class="endpoint">
+    <strong>Health:</strong> <code>GET /health</code>
+  </div>
+
+  <h2>Supported Chains</h2>
+  <p>Ethereum, BSC, Polygon, Arbitrum, Optimism, Base, Avalanche</p>
+
+  <p><small>Powered by agent-kit + viem</small></p>
+</body>
+</html>`);
+});
+
+// Forward ALL other requests to agent-kit's Hono app
+wrapperApp.all('*', async (c) => {
+  console.log(`[WRAPPER] Forwarding ${c.req.method} ${c.req.path} to agent-kit`);
+  return honoApp.fetch(c.req.raw);
+});
+
+console.log('[STARTUP] Wrapper app created - will intercept root route with OG metadata ✓');
+
+// ============================================
+// STEP 6: Start Server (Auto-detect runtime)
+// ============================================
+console.log('[STARTUP] Step 6: Starting server...');
 
 // Check if running in Bun
 const isBun = typeof Bun !== 'undefined';
 console.log(`[CONFIG] Detected runtime: ${isBun ? 'Bun' : 'Node.js'}`);
 
 if (isBun) {
-  // Use Bun's native server
+  // Use Bun's native server with wrapper app
   const server = Bun.serve({
     port: PORT,
     hostname: HOST,
-    fetch: honoApp.fetch,
+    fetch: wrapperApp.fetch,
   });
 
   console.log(`[SUCCESS] ✓ Server running at http://${HOST}:${PORT} (Bun)`);
 } else {
-  // Use Node.js with @hono/node-server
+  // Use Node.js with @hono/node-server with wrapper app
   const { serve } = await import('@hono/node-server');
 
   const server = serve({
-    fetch: honoApp.fetch,
+    fetch: wrapperApp.fetch,
     port: PORT,
     hostname: HOST,
   }, (info) => {
