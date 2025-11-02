@@ -621,24 +621,9 @@ honoApp.use('/entrypoints/simulate-transaction/invoke', async (c, next) => {
       },
       402
     );
-  }
-
-  // With payment - verify and process
-  try {
-    // TODO: Add actual payment verification via facilitator
-    console.log('[X402] Payment header received:', paymentHeader);
-
-    const body = await c.req.json();
-    const result = await simulateTransaction(body as SimulationRequest);
-
-    return c.json(result);
-  } catch (error: any) {
-    console.error('[X402] Simulation failed:', error);
-    return c.json({ error: error.message }, 500);
-  }
 });
 
-console.log('[STARTUP] Manual x402 endpoint defined (with complete outputSchema) ✓');
+console.log('[STARTUP] Middleware to override outputSchema registered ✓');
 
 // ============================================
 // STEP 4.6: Custom Routes (after agent-kit registration)
