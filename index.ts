@@ -615,6 +615,12 @@ app.addEntrypoint({
   name: 'Simulate Transaction',
   description: 'Simulate a transaction to preview outcomes before execution - gas costs, asset changes, and failure prediction',
   price: '$0.03',
+  metadata: {
+    'og:title': 'Transaction Simulator - x402 Agent',
+    'og:description': 'Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction across 7 EVM chains',
+    'og:image': 'https://transaction-simulator-production.up.railway.app/og-image.png',
+    'og:url': 'https://transaction-simulator-production.up.railway.app/entrypoints/simulate-transaction/invoke'
+  } as any,
   outputSchema: {
     input: {
       type: 'http',
