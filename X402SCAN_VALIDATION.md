@@ -1,5 +1,18 @@
 # x402scan Validation Requirements
 
+## ⚠️ CRITICAL REQUIREMENT ⚠️
+
+**ALL AGENTS MUST USE @lucid-dreams/agent-kit - NO EXCEPTIONS**
+
+This is a NON-NEGOTIABLE requirement. The wrapper pattern described here is specifically designed to work **WITH** agent-kit, not replace it.
+
+- ✅ Agent-kit handles ALL x402 protocol functionality
+- ✅ Agent-kit handles ALL payment verification
+- ✅ Agent-kit handles ALL entrypoint registration
+- ✅ Wrapper ONLY adds OG metadata to root HTML
+- ❌ NEVER build custom x402 implementation
+- ❌ NEVER replace agent-kit with custom code
+
 ## Overview
 
 x402scan (https://www.x402scan.com/developer) validates x402 agents against 5 critical checks. **ALL 5 MUST PASS** for proper agent registration and discovery.
@@ -353,11 +366,25 @@ honoApp.get('/og-image.png', (c) => {
 
 ## Why This Pattern Works
 
+**IMPORTANT**: This pattern preserves 100% of agent-kit functionality. Agent-kit is still doing ALL the work.
+
 1. **Wrapper intercepts first**: Request hits wrapper app before agent-kit sees it
 2. **Custom HTML for root**: Wrapper serves GET / with OG tags
-3. **Agent-kit preserved**: All other routes forwarded to agent-kit unchanged
-4. **x402 functionality intact**: Payment verification, entrypoints, all work normally
+3. **🚨 AGENT-KIT PRESERVED**: All other routes forwarded to agent-kit unchanged
+4. **🚨 x402 functionality intact**: Agent-kit handles payment verification, entrypoints, everything
 5. **x402scan validation passes**: OG tags present in HTML, 402 responses work
+6. **No custom x402 code**: Agent-kit manages the entire x402 protocol
+7. **No payment code**: Agent-kit verifies all payments automatically
+
+**The wrapper is literally just a thin HTML proxy for the root route. That's it.**
+
+Agent-kit remains responsible for:
+- ✅ `.well-known/agent.json` endpoint
+- ✅ `.well-known/x402` endpoint (returns 402 status)
+- ✅ All entrypoint routes
+- ✅ Payment verification (X-PAYMENT header)
+- ✅ x402 protocol compliance
+- ✅ Facilitator communication
 
 ## Reference Implementation
 
