@@ -609,12 +609,83 @@ honoApp.use('/entrypoints/simulate-transaction/invoke', async (c, next) => {
 
 console.log('[STARTUP] Middleware to override outputSchema registered ✓');
 
-// Register agent-kit entrypoint AFTER middleware
+// Register agent-kit entrypoint with outputSchema
 app.addEntrypoint({
   key: 'simulate-transaction',
   name: 'Simulate Transaction',
   description: 'Simulate a transaction to preview outcomes before execution - gas costs, asset changes, and failure prediction',
   price: '$0.03',
+  outputSchema: {
+    input: {
+      type: 'http',
+      method: 'POST',
+      discoverable: true,
+      bodyType: 'json',
+      bodyFields: {
+        chain_id: {
+          type: 'integer',
+          required: true,
+          description: 'Chain ID (1=Ethereum, 56=BSC, 137=Polygon, 42161=Arbitrum, 10=Optimism, 8453=Base, 43114=Avalanche)'
+        },
+        from_address: {
+          type: 'string',
+          required: true,
+          description: 'Sender address (0x...)'
+        },
+        to_address: {
+          type: 'string',
+          required: true,
+          description: 'Recipient/contract address (0x...)'
+        },
+        value: {
+          type: 'string',
+          required: false,
+          description: 'Value to send in hex wei (e.g. 0x0 for no value)'
+        },
+        data: {
+          type: 'string',
+          required: false,
+          description: 'Transaction data (0x... for contract calls)'
+        }
+      }
+    },
+    output: {
+      type: 'object',
+      description: 'Transaction simulation results with gas estimates and asset changes',
+      required: ['success', 'gas_used', 'gas_cost_eth', 'gas_cost_usd', 'chain_id'],
+      properties: {
+        success: { type: 'boolean', description: 'Whether the transaction is expected to succeed' },
+        gas_used: { type: 'integer', description: 'Estimated gas units consumed' },
+        gas_cost_eth: { type: 'number', description: 'Gas cost in ETH/native currency' },
+        gas_cost_usd: { type: 'number', description: 'Gas cost in USD' },
+        gas_price_gwei: { type: 'number', description: 'Current gas price in gwei' },
+        error: { type: ['string', 'null'], description: 'Error message if simulation failed' },
+        asset_changes: {
+          type: 'array',
+          description: 'Detected asset transfers',
+          items: {
+            type: 'object',
+            properties: {
+              asset_type: { type: 'string', description: 'NATIVE, ERC20, or ERC721' },
+              change_type: { type: 'string', description: 'TRANSFER, MINT, BURN' },
+              from: { type: 'string', description: 'Source address' },
+              to: { type: 'string', description: 'Destination address' },
+              amount_wei: { type: 'string', description: 'Amount in wei' },
+              amount_eth: { type: 'number', description: 'Amount in ETH' },
+              symbol: { type: 'string', description: 'Token symbol' }
+            }
+          }
+        },
+        warnings: {
+          type: 'array',
+          description: 'Warnings about the transaction',
+          items: { type: 'string' }
+        },
+        chain_id: { type: 'integer', description: 'Chain ID where simulation was performed' },
+        simulation_method: { type: 'string', description: 'Method used: eth_call, tenderly, or error' }
+      }
+    }
+  } as any,
   handler: async (ctx) => {
     console.log('[AGENT-KIT] simulate-transaction handler called');
     const input = ctx.input as SimulationRequest;
