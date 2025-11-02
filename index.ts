@@ -24,7 +24,7 @@ console.log('[CONFIG] Network:', NETWORK);
 console.log('[CONFIG] Default Price:', DEFAULT_PRICE);
 
 // ============================================
-// STEP 2: Chain Configuration
+// STEP 2: Chain Configuration & Simulation Engine
 // ============================================
 console.log('[STARTUP] Step 2: Configuring blockchain clients...');
 
@@ -99,11 +99,6 @@ for (const [chainIdStr, config] of Object.entries(CHAIN_CONFIGS)) {
 }
 
 console.log(`[CONFIG] Initialized ${supportedChainIds.length} chains`);
-
-// ============================================
-// STEP 3: Simulation Engine
-// ============================================
-console.log('[STARTUP] Step 3: Setting up simulation engine...');
 
 interface SimulationRequest {
   chain_id: number;
@@ -320,12 +315,12 @@ async function simulateTransaction(request: SimulationRequest): Promise<Simulati
   }
 }
 
-console.log('[STARTUP] Simulation engine ready ✓');
+console.log('[STARTUP] Chain configuration and simulation engine ready ✓');
 
 // ============================================
-// STEP 4: Create Agent App
+// STEP 3: Create Agent App
 // ============================================
-console.log('[STARTUP] Step 4: Creating agent app...');
+console.log('[STARTUP] Step 3: Creating agent app...');
 
 const app = createAgentApp({
   name: 'Transaction Simulator',
@@ -345,16 +340,19 @@ console.log('[STARTUP] Agent app created ✓');
 const honoApp = app.app;
 
 // ============================================
-// STEP 5: Define Entrypoints
+// STEP 4: Define Entrypoints
 // ============================================
-console.log('[STARTUP] Step 5: Defining entrypoints...');
+console.log('[STARTUP] Step 4: Defining entrypoints...');
 
 // Health check
 honoApp.get('/health', (c) => {
   console.log('[HEALTH] Health check requested');
   return c.json({
-    ok: true,
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    service: 'Transaction Simulator',
     version: '1.0.0',
+    runtime: typeof Bun !== 'undefined' ? 'Bun' : 'Node.js'
   });
 });
 
@@ -461,37 +459,10 @@ app.addEntrypoint({
 
 console.log('[STARTUP] Entrypoints defined ✓');
 
-// Manual .well-known/x402 endpoint (add AFTER entrypoints to avoid route conflicts)
-honoApp.get('/.well-known/x402', (c) => {
-  console.log('[402] .well-known/x402 endpoint requested');
-  return c.json(
-    {
-      x402Version: 1,
-      accepts: [
-        {
-          scheme: 'exact',
-          network: 'base',
-          maxAmountRequired: '30000', // 0.03 USDC
-          resource: 'https://transaction-simulator-production.up.railway.app/simulate-transaction-x402',
-          description:
-            'Simulate transactions before execution to preview outcomes and estimate gas',
-          mimeType: 'application/json',
-          payTo: WALLET_ADDRESS,
-          maxTimeoutSeconds: 300,
-          asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
-        },
-      ],
-    },
-    402
-  );
-});
-
-console.log('[STARTUP] .well-known/x402 endpoint registered ✓');
-
 // ============================================
-// STEP 6: Start Server (Auto-detect runtime)
+// STEP 5: Start Server (Auto-detect runtime)
 // ============================================
-console.log('[STARTUP] Step 6: Starting server...');
+console.log('[STARTUP] Step 5: Starting server...');
 
 // Check if running in Bun
 const isBun = typeof Bun !== 'undefined';
@@ -510,16 +481,13 @@ if (isBun) {
   // Use Node.js with @hono/node-server
   const { serve } = await import('@hono/node-server');
 
-  const server = serve(
-    {
-      fetch: honoApp.fetch,
-      port: PORT,
-      hostname: HOST,
-    },
-    (info) => {
-      console.log(`[SUCCESS] ✓ Server running at http://${info.address}:${info.port} (Node.js)`);
-    }
-  );
+  const server = serve({
+    fetch: honoApp.fetch,
+    port: PORT,
+    hostname: HOST,
+  }, (info) => {
+    console.log(`[SUCCESS] ✓ Server running at http://${info.address}:${info.port} (Node.js)`);
+  });
 
   // Graceful shutdown for Node
   const shutdown = () => {
@@ -536,7 +504,6 @@ if (isBun) {
 
 console.log(`[SUCCESS] ✓ Health check: http://${HOST}:${PORT}/health`);
 console.log(`[SUCCESS] ✓ Entrypoints: http://${HOST}:${PORT}/entrypoints`);
-console.log(`[SUCCESS] ✓ x402 endpoint: http://${HOST}:${PORT}/simulate-transaction-x402`);
 console.log('[SUCCESS] ===== READY TO ACCEPT REQUESTS =====');
 
 // Keep-alive logging
