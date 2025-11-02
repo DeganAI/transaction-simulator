@@ -160,6 +160,18 @@ This service implements the x402 protocol for micropayments:
 - **.well-known/agent.json**: Agent metadata (managed by agent-kit)
 - **.well-known/x402**: x402 metadata (managed by agent-kit)
 
+### x402scan Validation
+
+This agent passes all 5 x402scan validation checks:
+- ✅ Returns 402 (GET and POST)
+- ✅ x402 parses correctly
+- ✅ Valid schema with input/output
+- ✅ OG image metadata
+- ✅ OG description metadata
+- ✅ Favicon
+
+**IMPORTANT**: Uses wrapper Hono app pattern to add OG metadata tags while maintaining agent-kit functionality. See `X402SCAN_VALIDATION.md` for implementation details and requirements for other agents.
+
 ## Testing
 
 ### Test Locally
@@ -196,12 +208,20 @@ index.ts
 │   └── Warning generation
 ├── Agent App (agent-kit)
 │   ├── Payment configuration
-│   └── Automatic x402 handling
+│   ├── Automatic x402 handling
+│   └── Entrypoint registration
+├── Wrapper App (for x402scan OG metadata)
+│   ├── GET / → Custom HTML with OG tags
+│   ├── GET /favicon.ico → Favicon
+│   └── ALL other routes → Forward to agent-kit
 └── Endpoints
     ├── /health
+    ├── /og-image.png (OG image)
     ├── /simulate-transaction-x402 (custom x402)
     └── /entrypoints/simulate-transaction/invoke (agent-kit)
 ```
+
+**Note**: The wrapper app pattern is required for x402scan validation. See `X402SCAN_VALIDATION.md` for details.
 
 ## License
 
