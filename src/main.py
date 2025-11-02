@@ -223,22 +223,77 @@ async def health():
 
 
 @app.get("/entrypoints/transaction-simulator/invoke")
+@app.head("/entrypoints/transaction-simulator/invoke")
 async def get_transaction_simulator_metadata():
     """Return x402 payment metadata for transaction simulator endpoint"""
-    return Response(
-        content='{"error": "Payment Required", "message": "This endpoint requires x402 payment"}',
-        status_code=402,
-        media_type="application/json",
-        headers={
-            "X-Accept-Payment": "x402",
-            "X-Payment-Address": payment_address,
-            "X-Payment-Network": "base",
-            "X-Payment-Asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-            "X-Payment-Amount": "30000",
-            "X-Facilitator-Url": "https://facilitator.daydreams.systems",
-            "X-Output-Schema": '{"input":{"type":"http","method":"POST","bodyType":"json","bodyFields":{"chain_id":{"type":"number","required":true,"description":"Blockchain ID (1=Ethereum, 56=BSC, 137=Polygon, 42161=Arbitrum, 10=Optimism, 8453=Base, 43114=Avalanche)"},"from_address":{"type":"string","required":true,"description":"Sender address"},"to_address":{"type":"string","required":true,"description":"Recipient or contract address"},"value":{"type":"string","required":false,"description":"ETH value in hex (default: 0x0)"},"data":{"type":"string","required":false,"description":"Transaction data in hex (default: 0x)"},"gas":{"type":"string","required":false,"description":"Gas limit in hex (optional)"},"gas_price":{"type":"string","required":false,"description":"Gas price in hex (optional)"}}},"output":{"type":"object","description":"Transaction simulation results including success status, gas estimates, asset changes, and warnings"}}'
-        }
-    )
+    from fastapi.responses import JSONResponse
+
+    metadata = {
+        "x402Version": 1,
+        "accepts": [
+            {
+                "scheme": "exact",
+                "network": "base",
+                "maxAmountRequired": "30000",  # 0.03 USDC
+                "resource": f"{base_url}/entrypoints/transaction-simulator/invoke",
+                "description": "Simulate transactions before execution to preview outcomes and estimate gas",
+                "mimeType": "application/json",
+                "payTo": payment_address,
+                "maxTimeoutSeconds": 30,
+                "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",  # USDC on Base
+                "outputSchema": {
+                    "input": {
+                        "type": "http",
+                        "method": "POST",
+                        "bodyType": "json",
+                        "bodyFields": {
+                            "chain_id": {
+                                "type": "number",
+                                "required": True,
+                                "description": "Blockchain ID (1=Ethereum, 56=BSC, etc.)"
+                            },
+                            "from_address": {
+                                "type": "string",
+                                "required": True,
+                                "description": "Sender address"
+                            },
+                            "to_address": {
+                                "type": "string",
+                                "required": True,
+                                "description": "Recipient or contract address"
+                            },
+                            "value": {
+                                "type": "string",
+                                "required": False,
+                                "description": "ETH value in hex (default: 0x0)"
+                            },
+                            "data": {
+                                "type": "string",
+                                "required": False,
+                                "description": "Transaction data in hex (default: 0x)"
+                            },
+                            "gas": {
+                                "type": "string",
+                                "required": False,
+                                "description": "Gas limit in hex (optional)"
+                            },
+                            "gas_price": {
+                                "type": "string",
+                                "required": False,
+                                "description": "Gas price in hex (optional)"
+                            }
+                        }
+                    },
+                    "output": {
+                        "type": "object",
+                        "description": "Transaction simulation result with success status and state changes"
+                    }
+                }
+            }
+        ]
+    }
+
+    return JSONResponse(content=metadata, status_code=402)
 
 
 @app.post(

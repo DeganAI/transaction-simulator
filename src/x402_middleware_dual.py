@@ -153,7 +153,7 @@ class X402Middleware(BaseHTTPMiddleware):
                 {
                     "scheme": "exact",
                     "network": "base",
-                    "maxAmountRequired": "50000",  # 0.05 USDC (6 decimals)
+                    "maxAmountRequired": "30000",  # 0.03 USDC (6 decimals)
                     "resource": resource_url,
                     "description": description,
                     "mimeType": "application/json",
@@ -252,7 +252,7 @@ class X402Middleware(BaseHTTPMiddleware):
         is_valid, error_message = await self.verify_payment(
             payment_header=payment_header,
             resource_url=str(request.url),
-            amount_required="50000"  # 0.05 USDC
+            amount_required="30000"  # 0.03 USDC
         )
 
         if not is_valid:
