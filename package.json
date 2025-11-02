@@ -1,0 +1,26 @@
+{
+  "name": "transaction-simulator",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Preview transaction outcomes before execution via x402",
+  "scripts": {
+    "dev": "bun run index.ts",
+    "start": "tsx index.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@lucid-dreams/agent-kit": "^0.2.22",
+    "@hono/node-server": "^1.12.0",
+    "hono": "^4.0.0",
+    "tsx": "^4.7.0",
+    "viem": "^2.21.54",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
