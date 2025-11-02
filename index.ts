@@ -339,13 +339,12 @@ console.log('[STARTUP] Agent app created ✓');
 // Access the underlying Hono app
 const honoApp = app.app;
 
-// Aggressive middleware to intercept ALL requests and check for root route FIRST
-// Must run before agent-kit registers any routes
-honoApp.use('*', async (c, next) => {
-  // Intercept root path GET requests BEFORE agent-kit handles them
-  if (c.req.path === '/' && c.req.method === 'GET') {
-    console.log('[CUSTOM] ✓ Intercepted root route, serving custom HTML with OG tags');
-    return c.html(`<!DOCTYPE html>
+// NUCLEAR OPTION: Directly override root route by registering it again
+// Hono allows re-registering routes, last one wins for the same path+method
+console.log('[CUSTOM] Overriding agent-kit root route with custom HTML');
+honoApp.get('/', (c) => {
+  console.log('[CUSTOM] ✓ Serving custom root HTML with OG tags');
+  return c.html(`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -395,8 +394,6 @@ honoApp.use('*', async (c, next) => {
   <p><small>Powered by agent-kit + viem</small></p>
 </body>
 </html>`);
-  }
-  await next();
 });
 
 // ============================================
