@@ -10,7 +10,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
@@ -440,7 +440,7 @@ async def agent_metadata():
 @app.get("/.well-known/x402")
 async def x402_metadata():
     """x402 payment metadata"""
-    return {
+    return JSONResponse(content={
         "x402Version": 1,
         "accepts": [
             {
@@ -514,7 +514,7 @@ async def x402_metadata():
                 }
             }
         ]
-    }
+    }, status_code=402)
 
 
 if __name__ == "__main__":

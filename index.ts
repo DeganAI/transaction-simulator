@@ -478,112 +478,147 @@ honoApp.post('/simulate-transaction-x402', async (c) => {
   }
 });
 
-// Agent-kit entrypoint for discovery
-app.addEntrypoint({
-  key: 'simulate-transaction',
-  name: 'Simulate Transaction',
-  description:
-    'Simulate a transaction to preview outcomes before execution - gas costs, asset changes, and failure prediction',
-  price: '$0.03',
-  handler: async (ctx) => {
-    console.log('[AGENT-KIT] simulate-transaction called');
+// Manual x402 implementation at /entrypoints/simulate-transaction/invoke
+// This replaces agent-kit's entrypoint to have full control over outputSchema
+honoApp.all('/entrypoints/simulate-transaction/invoke', async (c) => {
+  console.log('[X402] simulate-transaction invoke called');
 
-    const input = ctx.input as SimulationRequest;
-    const result = await simulateTransaction(input);
+  const paymentHeader = c.req.header('X-PAYMENT');
 
-    return result;
-  },
-});
-
-console.log('[STARTUP] Entrypoints defined ✓');
-
-// ============================================
-// STEP 4.5: Middleware to fix agent-kit's outputSchema
-// ============================================
-
-// Agent-kit only generates "input" in outputSchema, but x402scan requires "output" field too
-// This middleware intercepts 402 responses and adds the output schema
-honoApp.use('/entrypoints/*/invoke', async (c, next) => {
-  await next();
-
-  // Only modify 402 responses
-  if (c.res.status === 402) {
-    const body = await c.res.json();
-
-    // Add output field to outputSchema if it's missing
-    if (body.accepts && Array.isArray(body.accepts)) {
-      body.accepts.forEach((accept: any) => {
-        if (accept.outputSchema && accept.outputSchema.input && !accept.outputSchema.output) {
-          accept.outputSchema.output = {
-            type: 'object',
-            description: 'Transaction simulation results',
-            required: ['success', 'gas_used', 'gas_cost_eth', 'gas_cost_usd', 'chain_id'],
-            properties: {
-              success: {
-                type: 'boolean',
-                description: 'Whether the transaction is expected to succeed'
-              },
-              gas_used: {
-                type: 'integer',
-                description: 'Estimated gas units consumed'
-              },
-              gas_cost_eth: {
-                type: 'number',
-                description: 'Gas cost in ETH/native currency'
-              },
-              gas_cost_usd: {
-                type: 'number',
-                description: 'Gas cost in USD'
-              },
-              gas_price_gwei: {
-                type: 'number',
-                description: 'Current gas price in gwei'
-              },
-              error: {
-                type: ['string', 'null'],
-                description: 'Error message if simulation failed'
-              },
-              asset_changes: {
-                type: 'array',
-                description: 'Detected asset transfers and changes',
-                items: {
-                  type: 'object',
-                  properties: {
-                    asset_type: { type: 'string' },
-                    change_type: { type: 'string' },
-                    from: { type: 'string' },
-                    to: { type: 'string' },
-                    amount_wei: { type: 'string' },
-                    amount_eth: { type: 'number' },
-                    symbol: { type: 'string' }
+  if (!paymentHeader) {
+    // Return 402 with complete outputSchema (both input AND output)
+    return c.json(
+      {
+        x402Version: 1,
+        accepts: [
+          {
+            scheme: 'exact',
+            network: NETWORK,
+            maxAmountRequired: '30000', // $0.03 in USDC (6 decimals)
+            resource: `https://transaction-simulator-production.up.railway.app/entrypoints/simulate-transaction/invoke`,
+            description: 'Simulate a transaction to preview outcomes before execution - gas costs, asset changes, and failure prediction',
+            mimeType: 'application/json',
+            payTo: WALLET_ADDRESS,
+            maxTimeoutSeconds: 300,
+            asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
+            outputSchema: {
+              input: {
+                type: 'http',
+                method: 'POST',
+                discoverable: true,
+                bodyType: 'json',
+                bodyFields: {
+                  chain_id: {
+                    type: 'integer',
+                    required: true,
+                    description: 'Chain ID (1=Ethereum, 56=BSC, 137=Polygon, 42161=Arbitrum, 10=Optimism, 8453=Base, 43114=Avalanche)'
+                  },
+                  from_address: {
+                    type: 'string',
+                    required: true,
+                    description: 'Sender address (0x...)'
+                  },
+                  to_address: {
+                    type: 'string',
+                    required: true,
+                    description: 'Recipient/contract address (0x...)'
+                  },
+                  value: {
+                    type: 'string',
+                    required: false,
+                    description: 'Value to send in hex wei (e.g. 0x0 for no value)'
+                  },
+                  data: {
+                    type: 'string',
+                    required: false,
+                    description: 'Transaction data (0x... for contract calls)'
                   }
                 }
               },
-              warnings: {
-                type: 'array',
-                description: 'Warnings and alerts about the transaction',
-                items: { type: 'string' }
-              },
-              chain_id: {
-                type: 'integer',
-                description: 'Chain ID where simulation was performed'
-              },
-              simulation_method: {
-                type: 'string',
-                description: 'Method used for simulation (eth_call, tenderly, etc.)'
+              output: {
+                type: 'object',
+                description: 'Transaction simulation results with gas estimates and asset changes',
+                required: ['success', 'gas_used', 'gas_cost_eth', 'gas_cost_usd', 'chain_id'],
+                properties: {
+                  success: {
+                    type: 'boolean',
+                    description: 'Whether the transaction is expected to succeed'
+                  },
+                  gas_used: {
+                    type: 'integer',
+                    description: 'Estimated gas units consumed'
+                  },
+                  gas_cost_eth: {
+                    type: 'number',
+                    description: 'Gas cost in ETH/native currency'
+                  },
+                  gas_cost_usd: {
+                    type: 'number',
+                    description: 'Gas cost in USD'
+                  },
+                  gas_price_gwei: {
+                    type: 'number',
+                    description: 'Current gas price in gwei'
+                  },
+                  error: {
+                    type: ['string', 'null'],
+                    description: 'Error message if simulation failed'
+                  },
+                  asset_changes: {
+                    type: 'array',
+                    description: 'Detected asset transfers',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        asset_type: { type: 'string', description: 'NATIVE, ERC20, or ERC721' },
+                        change_type: { type: 'string', description: 'TRANSFER, MINT, BURN' },
+                        from: { type: 'string', description: 'Source address' },
+                        to: { type: 'string', description: 'Destination address' },
+                        amount_wei: { type: 'string', description: 'Amount in wei' },
+                        amount_eth: { type: 'number', description: 'Amount in ETH' },
+                        symbol: { type: 'string', description: 'Token symbol' }
+                      }
+                    }
+                  },
+                  warnings: {
+                    type: 'array',
+                    description: 'Warnings about the transaction',
+                    items: { type: 'string' }
+                  },
+                  chain_id: {
+                    type: 'integer',
+                    description: 'Chain ID where simulation was performed'
+                  },
+                  simulation_method: {
+                    type: 'string',
+                    description: 'Method used: eth_call, tenderly, or error'
+                  }
+                }
               }
             }
-          };
-          console.log('[MIDDLEWARE] Added output schema to 402 response');
-        }
-      });
-    }
+          }
+        ]
+      },
+      402
+    );
+  }
 
-    return c.json(body, 402);
+  // With payment - verify and process
+  try {
+    // TODO: Add actual payment verification via facilitator
+    console.log('[X402] Payment header received:', paymentHeader);
+
+    const body = await c.req.json();
+    const result = await simulateTransaction(body as SimulationRequest);
+
+    return c.json(result);
+  } catch (error: any) {
+    console.error('[X402] Simulation failed:', error);
+    return c.json({ error: error.message }, 500);
   }
 });
 
-console.log('[STARTUP] outputSchema middleware installed ✓');
+console.log('[STARTUP] Manual x402 endpoint defined (with complete outputSchema) ✓');
 
 // ============================================
 // STEP 4.6: Custom Routes (after agent-kit registration)
