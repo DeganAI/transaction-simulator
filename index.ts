@@ -339,12 +339,12 @@ console.log('[STARTUP] Agent app created ✓');
 // Access the underlying Hono app
 const honoApp = app.app;
 
-// Middleware to intercept root route and serve custom HTML with OG tags
-// MUST be registered BEFORE entrypoints to override agent-kit
-honoApp.use('/', async (c, next) => {
-  // Only intercept exact root path GET requests
+// Aggressive middleware to intercept ALL requests and check for root route FIRST
+// Must run before agent-kit registers any routes
+honoApp.use('*', async (c, next) => {
+  // Intercept root path GET requests BEFORE agent-kit handles them
   if (c.req.path === '/' && c.req.method === 'GET') {
-    console.log('[CUSTOM] Serving custom root HTML with OG tags');
+    console.log('[CUSTOM] ✓ Intercepted root route, serving custom HTML with OG tags');
     return c.html(`<!DOCTYPE html>
 <html lang="en">
 <head>
