@@ -724,6 +724,19 @@ console.log('[STARTUP] Step 5: Creating wrapper app with custom root HTML...');
 // Create wrapper Hono app that intercepts root route BEFORE agent-kit
 const wrapperApp = new Hono();
 
+// Favicon endpoint
+wrapperApp.get('/favicon.ico', (c) => {
+  console.log('[WRAPPER] ✓ Serving favicon');
+  // Simple SVG favicon (green transaction icon)
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <rect width="100" height="100" fill="#10b981"/>
+    <path d="M50 20 L80 50 L50 80 L20 50 Z" fill="#ffffff" stroke="#059669" stroke-width="3"/>
+    <circle cx="50" cy="50" r="8" fill="#059669"/>
+  </svg>`;
+  c.header('Content-Type', 'image/svg+xml');
+  return c.body(svg);
+});
+
 // Handle root route with custom HTML and OG metadata tags
 wrapperApp.get('/', (c) => {
   console.log('[WRAPPER] ✓ Serving custom root HTML with OG tags');
