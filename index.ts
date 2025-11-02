@@ -358,31 +358,6 @@ honoApp.get('/health', (c) => {
   });
 });
 
-// Manual .well-known/x402 endpoint (agent-kit should handle this, but adding explicitly)
-honoApp.get('/.well-known/x402', (c) => {
-  console.log('[402] .well-known/x402 endpoint requested');
-  return c.json(
-    {
-      x402Version: 1,
-      accepts: [
-        {
-          scheme: 'exact',
-          network: 'base',
-          maxAmountRequired: '30000', // 0.03 USDC
-          resource: 'https://transaction-simulator-production.up.railway.app/simulate-transaction-x402',
-          description:
-            'Simulate transactions before execution to preview outcomes and estimate gas',
-          mimeType: 'application/json',
-          payTo: WALLET_ADDRESS,
-          maxTimeoutSeconds: 300,
-          asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
-        },
-      ],
-    },
-    402
-  );
-});
-
 // SEPARATE x402 endpoint for x402scan registration (bypasses agent-kit)
 honoApp.post('/simulate-transaction-x402', async (c) => {
   const paymentHeader = c.req.header('X-PAYMENT');
@@ -485,6 +460,33 @@ app.addEntrypoint({
 });
 
 console.log('[STARTUP] Entrypoints defined ✓');
+
+// Manual .well-known/x402 endpoint (add AFTER entrypoints to avoid route conflicts)
+honoApp.get('/.well-known/x402', (c) => {
+  console.log('[402] .well-known/x402 endpoint requested');
+  return c.json(
+    {
+      x402Version: 1,
+      accepts: [
+        {
+          scheme: 'exact',
+          network: 'base',
+          maxAmountRequired: '30000', // 0.03 USDC
+          resource: 'https://transaction-simulator-production.up.railway.app/simulate-transaction-x402',
+          description:
+            'Simulate transactions before execution to preview outcomes and estimate gas',
+          mimeType: 'application/json',
+          payTo: WALLET_ADDRESS,
+          maxTimeoutSeconds: 300,
+          asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
+        },
+      ],
+    },
+    402
+  );
+});
+
+console.log('[STARTUP] .well-known/x402 endpoint registered ✓');
 
 // ============================================
 // STEP 6: Start Server (Auto-detect runtime)
