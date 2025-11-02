@@ -478,16 +478,36 @@ honoApp.post('/simulate-transaction-x402', async (c) => {
   }
 });
 
-// Manual x402 implementation at /entrypoints/simulate-transaction/invoke
-// This replaces agent-kit's entrypoint to have full control over outputSchema
-honoApp.all('/entrypoints/simulate-transaction/invoke', async (c) => {
-  console.log('[X402] simulate-transaction invoke called');
+// Register agent-kit entrypoint FIRST
+app.addEntrypoint({
+  key: 'simulate-transaction',
+  name: 'Simulate Transaction',
+  description: 'Simulate a transaction to preview outcomes before execution - gas costs, asset changes, and failure prediction',
+  price: '$0.03',
+  handler: async (ctx) => {
+    console.log('[AGENT-KIT] simulate-transaction handler called');
+    const input = ctx.input as SimulationRequest;
+    const result = await simulateTransaction(input);
+    return result;
+  },
+});
+
+console.log('[STARTUP] Agent-kit entrypoint registered ✓');
+
+// Middleware to intercept agent-kit's 402 response and add complete outputSchema
+honoApp.use('/entrypoints/simulate-transaction/invoke', async (c, next) => {
+  console.log('[MIDDLEWARE] Intercepting invoke endpoint');
 
   const paymentHeader = c.req.header('X-PAYMENT');
 
-  if (!paymentHeader) {
-    // Return 402 with complete outputSchema (both input AND output)
-    return c.json(
+  // If payment present, let agent-kit handle the request
+  if (paymentHeader) {
+    return await next();
+  }
+
+  // No payment - return our custom 402 with complete outputSchema
+  console.log('[MIDDLEWARE] Returning custom 402 with output schema');
+  return c.json(
       {
         x402Version: 1,
         accepts: [
