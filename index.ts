@@ -747,6 +747,7 @@ wrapperApp.get('/', (c) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Transaction Simulator - x402 Agent</title>
   <meta name="description" content="Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction across 7 EVM chains">
+  <link rel="icon" type="image/svg+xml" href="/favicon.ico">
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
