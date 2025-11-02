@@ -344,73 +344,6 @@ const honoApp = app.app;
 // ============================================
 console.log('[STARTUP] Step 4: Defining entrypoints...');
 
-// Custom root route with Open Graph tags for x402scan validation
-honoApp.get('/', (c) => {
-  return c.html(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Transaction Simulator - x402 Agent</title>
-  <meta name="description" content="Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction across 7 EVM chains">
-
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://transaction-simulator-production.up.railway.app/">
-  <meta property="og:title" content="Transaction Simulator - x402 Agent">
-  <meta property="og:description" content="Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction across 7 EVM chains">
-  <meta property="og:image" content="https://transaction-simulator-production.up.railway.app/og-image.png">
-
-  <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://transaction-simulator-production.up.railway.app/">
-  <meta property="twitter:title" content="Transaction Simulator - x402 Agent">
-  <meta property="twitter:description" content="Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction across 7 EVM chains">
-  <meta property="twitter:image" content="https://transaction-simulator-production.up.railway.app/og-image.png">
-
-  <style>
-    body { font-family: system-ui; max-width: 800px; margin: 40px auto; padding: 20px; }
-    h1 { color: #2563eb; }
-    .endpoint { background: #f3f4f6; padding: 10px; border-radius: 8px; margin: 10px 0; }
-    code { background: #e5e7eb; padding: 2px 6px; border-radius: 4px; }
-  </style>
-</head>
-<body>
-  <h1>Transaction Simulator</h1>
-  <p>Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction</p>
-
-  <h2>x402 Agent Endpoints</h2>
-  <div class="endpoint">
-    <strong>Invoke:</strong> <code>POST /entrypoints/simulate-transaction/invoke</code>
-  </div>
-  <div class="endpoint">
-    <strong>Agent Discovery:</strong> <code>GET /.well-known/agent.json</code>
-  </div>
-  <div class="endpoint">
-    <strong>Health:</strong> <code>GET /health</code>
-  </div>
-
-  <h2>Supported Chains</h2>
-  <p>Ethereum, BSC, Polygon, Arbitrum, Optimism, Base, Avalanche</p>
-
-  <p><small>Powered by agent-kit + viem</small></p>
-</body>
-</html>`);
-});
-
-// OG Image endpoint (simple SVG)
-honoApp.get('/og-image.png', (c) => {
-  const svg = `<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1200" height="630" fill="#0c2713"/>
-  <text x="600" y="280" font-family="Arial" font-size="60" fill="#6de8a5" text-anchor="middle" font-weight="bold">Transaction Simulator</text>
-  <text x="600" y="350" font-family="Arial" font-size="32" fill="#e6f4ea" text-anchor="middle">Preview tx outcomes before execution</text>
-  <text x="600" y="420" font-family="Arial" font-size="24" fill="#76ad8b" text-anchor="middle">Gas costs · Asset changes · Failure prediction</text>
-  <text x="600" y="500" font-family="Arial" font-size="20" fill="#76ad8b" text-anchor="middle">7 EVM Chains · x402 Payment Protocol</text>
-</svg>`;
-  c.header('Content-Type', 'image/svg+xml');
-  return c.body(svg);
-});
-
 // Health check
 honoApp.get('/health', (c) => {
   console.log('[HEALTH] Health check requested');
@@ -563,6 +496,80 @@ app.addEntrypoint({
 });
 
 console.log('[STARTUP] Entrypoints defined ✓');
+
+// ============================================
+// STEP 4.5: Custom Routes (after agent-kit registration)
+// ============================================
+
+// Custom root route with Open Graph tags for x402scan validation
+// MUST be registered AFTER entrypoints to override agent-kit's default
+honoApp.get('/', (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transaction Simulator - x402 Agent</title>
+  <meta name="description" content="Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction across 7 EVM chains">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://transaction-simulator-production.up.railway.app/">
+  <meta property="og:title" content="Transaction Simulator - x402 Agent">
+  <meta property="og:description" content="Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction across 7 EVM chains">
+  <meta property="og:image" content="https://transaction-simulator-production.up.railway.app/og-image.png">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://transaction-simulator-production.up.railway.app/">
+  <meta property="twitter:title" content="Transaction Simulator - x402 Agent">
+  <meta property="twitter:description" content="Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction across 7 EVM chains">
+  <meta property="twitter:image" content="https://transaction-simulator-production.up.railway.app/og-image.png">
+
+  <style>
+    body { font-family: system-ui; max-width: 800px; margin: 40px auto; padding: 20px; }
+    h1 { color: #2563eb; }
+    .endpoint { background: #f3f4f6; padding: 10px; border-radius: 8px; margin: 10px 0; }
+    code { background: #e5e7eb; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Transaction Simulator</h1>
+  <p>Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction</p>
+
+  <h2>x402 Agent Endpoints</h2>
+  <div class="endpoint">
+    <strong>Invoke:</strong> <code>POST /entrypoints/simulate-transaction/invoke</code>
+  </div>
+  <div class="endpoint">
+    <strong>Agent Discovery:</strong> <code>GET /.well-known/agent.json</code>
+  </div>
+  <div class="endpoint">
+    <strong>Health:</strong> <code>GET /health</code>
+  </div>
+
+  <h2>Supported Chains</h2>
+  <p>Ethereum, BSC, Polygon, Arbitrum, Optimism, Base, Avalanche</p>
+
+  <p><small>Powered by agent-kit + viem</small></p>
+</body>
+</html>`);
+});
+
+// OG Image endpoint (simple SVG)
+honoApp.get('/og-image.png', (c) => {
+  const svg = `<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#0c2713"/>
+  <text x="600" y="280" font-family="Arial" font-size="60" fill="#6de8a5" text-anchor="middle" font-weight="bold">Transaction Simulator</text>
+  <text x="600" y="350" font-family="Arial" font-size="32" fill="#e6f4ea" text-anchor="middle">Preview tx outcomes before execution</text>
+  <text x="600" y="420" font-family="Arial" font-size="24" fill="#76ad8b" text-anchor="middle">Gas costs · Asset changes · Failure prediction</text>
+  <text x="600" y="500" font-family="Arial" font-size="20" fill="#76ad8b" text-anchor="middle">7 EVM Chains · x402 Payment Protocol</text>
+</svg>`;
+  c.header('Content-Type', 'image/svg+xml');
+  return c.body(svg);
+});
+
+console.log('[STARTUP] Custom routes registered (OG tags + image) ✓');
 
 // ============================================
 // STEP 5: Start Server (Auto-detect runtime)
