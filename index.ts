@@ -702,13 +702,26 @@ app.addEntrypoint({
 
 console.log('[STARTUP] Agent-kit entrypoint registered ✓');
 
+// OG Image endpoint (simple SVG) - register early
+honoApp.get('/og-image.png', (c) => {
+  const svg = `<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#0c2713"/>
+  <text x="600" y="280" font-family="Arial" font-size="60" fill="#6de8a5" text-anchor="middle" font-weight="bold">Transaction Simulator</text>
+  <text x="600" y="350" font-family="Arial" font-size="32" fill="#e6f4ea" text-anchor="middle">Preview tx outcomes before execution</text>
+  <text x="600" y="420" font-family="Arial" font-size="24" fill="#76ad8b" text-anchor="middle">Gas costs · Asset changes · Failure prediction</text>
+  <text x="600" y="500" font-family="Arial" font-size="20" fill="#76ad8b" text-anchor="middle">7 EVM Chains · x402 Payment Protocol</text>
+</svg>`;
+  c.header('Content-Type', 'image/svg+xml');
+  return c.body(svg);
+});
+
 // ============================================
-// STEP 4.6: Custom Routes (after agent-kit registration)
+// STEP 5: Custom Root Route (Override agent-kit)
 // ============================================
 
-// Custom root route with Open Graph tags for x402scan validation
-// MUST be registered AFTER entrypoints to override agent-kit's default
+// Custom root route with Open Graph tags - registered LAST to override agent-kit
 honoApp.get('/', (c) => {
+  console.log('[CUSTOM] Root route called');
   return c.html(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -761,25 +774,12 @@ honoApp.get('/', (c) => {
 </html>`);
 });
 
-// OG Image endpoint (simple SVG)
-honoApp.get('/og-image.png', (c) => {
-  const svg = `<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1200" height="630" fill="#0c2713"/>
-  <text x="600" y="280" font-family="Arial" font-size="60" fill="#6de8a5" text-anchor="middle" font-weight="bold">Transaction Simulator</text>
-  <text x="600" y="350" font-family="Arial" font-size="32" fill="#e6f4ea" text-anchor="middle">Preview tx outcomes before execution</text>
-  <text x="600" y="420" font-family="Arial" font-size="24" fill="#76ad8b" text-anchor="middle">Gas costs · Asset changes · Failure prediction</text>
-  <text x="600" y="500" font-family="Arial" font-size="20" fill="#76ad8b" text-anchor="middle">7 EVM Chains · x402 Payment Protocol</text>
-</svg>`;
-  c.header('Content-Type', 'image/svg+xml');
-  return c.body(svg);
-});
-
-console.log('[STARTUP] Custom routes registered (OG tags + image) ✓');
+console.log('[STARTUP] Custom root route registered with OG tags ✓');
 
 // ============================================
-// STEP 5: Start Server (Auto-detect runtime)
+// STEP 6: Start Server (Auto-detect runtime)
 // ============================================
-console.log('[STARTUP] Step 5: Starting server...');
+console.log('[STARTUP] Step 6: Starting server...');
 
 // Check if running in Bun
 const isBun = typeof Bun !== 'undefined';
