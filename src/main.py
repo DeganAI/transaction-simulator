@@ -10,6 +10,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
@@ -127,6 +128,87 @@ class SimulationResponse(BaseModel):
 
 
 # API Endpoints
+@app.get("/", response_class=HTMLResponse)
+async def landing_page():
+    """Landing page with metadata"""
+    html_content = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Simulator</title>
+    <meta property="og:title" content="Transaction Simulator">
+    <meta property="og:description" content="Simulate transactions before execution via x402 micropayments">
+    <meta property="og:image" content="https://transaction-simulator-production.up.railway.app/favicon.ico">
+    <link rel="icon" href="/favicon.ico" type="image/svg+xml">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 { color: #2c3e50; }
+        .endpoint {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .links { margin-top: 30px; }
+        .links a {
+            display: inline-block;
+            margin: 5px 10px 5px 0;
+            color: #3498db;
+            text-decoration: none;
+        }
+        .links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>🎮 Transaction Simulator</h1>
+    <p>Preview transaction outcomes before execution - gas costs, asset changes, and failure prediction via x402 micropayments.</p>
+
+    <h2>Features</h2>
+    <ul>
+        <li>Multi-chain transaction simulation</li>
+        <li>Gas cost estimation</li>
+        <li>Failure prediction</li>
+        <li>Asset change preview</li>
+        <li>x402 micropayment enabled</li>
+    </ul>
+
+    <h2>Endpoints</h2>
+    <div class="endpoint">POST /entrypoints/transaction-simulator/invoke</div>
+    <div class="endpoint">GET /.well-known/agent.json</div>
+    <div class="endpoint">GET /.well-known/x402</div>
+
+    <div class="links">
+        <a href="/docs">API Documentation</a>
+        <a href="/.well-known/agent.json">Agent Metadata</a>
+        <a href="/.well-known/x402">x402 Metadata</a>
+    </div>
+</body>
+</html>
+    """
+    return HTMLResponse(content=html_content)
+
+
+@app.get("/favicon.ico")
+async def favicon():
+    """Return SVG favicon with game controller emoji"""
+    svg_content = """
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <text y="80" font-size="80">🎮</text>
+</svg>
+    """
+    return Response(content=svg_content, media_type="image/svg+xml")
+
+
 @app.get("/health")
 async def health():
     """Health check endpoint"""
@@ -138,6 +220,25 @@ async def health():
         "supported_chains": len(supported_chains),
         "chain_ids": supported_chains
     }
+
+
+@app.get("/entrypoints/transaction-simulator/invoke")
+async def get_transaction_simulator_metadata():
+    """Return x402 payment metadata for transaction simulator endpoint"""
+    return Response(
+        content='{"error": "Payment Required", "message": "This endpoint requires x402 payment"}',
+        status_code=402,
+        media_type="application/json",
+        headers={
+            "X-Accept-Payment": "x402",
+            "X-Payment-Address": payment_address,
+            "X-Payment-Network": "base",
+            "X-Payment-Asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+            "X-Payment-Amount": "30000",
+            "X-Facilitator-Url": "https://facilitator.daydreams.systems",
+            "X-Output-Schema": '{"input":{"type":"http","method":"POST","bodyType":"json","bodyFields":{"chain_id":{"type":"number","required":true,"description":"Blockchain ID (1=Ethereum, 56=BSC, 137=Polygon, 42161=Arbitrum, 10=Optimism, 8453=Base, 43114=Avalanche)"},"from_address":{"type":"string","required":true,"description":"Sender address"},"to_address":{"type":"string","required":true,"description":"Recipient or contract address"},"value":{"type":"string","required":false,"description":"ETH value in hex (default: 0x0)"},"data":{"type":"string","required":false,"description":"Transaction data in hex (default: 0x)"},"gas":{"type":"string","required":false,"description":"Gas limit in hex (optional)"},"gas_price":{"type":"string","required":false,"description":"Gas price in hex (optional)"}}},"output":{"type":"object","description":"Transaction simulation results including success status, gas estimates, asset changes, and warnings"}}'
+        }
+    )
 
 
 @app.post(
