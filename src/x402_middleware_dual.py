@@ -160,6 +160,54 @@ class X402Middleware(BaseHTTPMiddleware):
                     "payTo": self.payment_address,
                     "maxTimeoutSeconds": 30,
                     "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",  # USDC on Base
+                    "outputSchema": {
+                        "input": {
+                            "type": "http",
+                            "method": "POST",
+                            "bodyType": "json",
+                            "bodyFields": {
+                                "chain_id": {
+                                    "type": "number",
+                                    "required": True,
+                                    "description": "Blockchain ID (1=Ethereum, 56=BSC, etc.)"
+                                },
+                                "from_address": {
+                                    "type": "string",
+                                    "required": True,
+                                    "description": "Sender address"
+                                },
+                                "to_address": {
+                                    "type": "string",
+                                    "required": True,
+                                    "description": "Recipient or contract address"
+                                },
+                                "value": {
+                                    "type": "string",
+                                    "required": False,
+                                    "description": "ETH value in hex (default: 0x0)"
+                                },
+                                "data": {
+                                    "type": "string",
+                                    "required": False,
+                                    "description": "Transaction data in hex (default: 0x)"
+                                },
+                                "gas": {
+                                    "type": "string",
+                                    "required": False,
+                                    "description": "Gas limit in hex (optional)"
+                                },
+                                "gas_price": {
+                                    "type": "string",
+                                    "required": False,
+                                    "description": "Gas price in hex (optional)"
+                                }
+                            }
+                        },
+                        "output": {
+                            "type": "object",
+                            "description": "Transaction simulation result with success status and state changes"
+                        }
+                    }
                 }
             ]
         }
@@ -225,6 +273,54 @@ class X402Middleware(BaseHTTPMiddleware):
                         "payTo": self.payment_address,
                         "maxTimeoutSeconds": 30,
                         "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                        "outputSchema": {
+                            "input": {
+                                "type": "http",
+                                "method": "POST",
+                                "bodyType": "json",
+                                "bodyFields": {
+                                    "chain_id": {
+                                        "type": "number",
+                                        "required": True,
+                                        "description": "Blockchain ID (1=Ethereum, 56=BSC, etc.)"
+                                    },
+                                    "from_address": {
+                                        "type": "string",
+                                        "required": True,
+                                        "description": "Sender address"
+                                    },
+                                    "to_address": {
+                                        "type": "string",
+                                        "required": True,
+                                        "description": "Recipient or contract address"
+                                    },
+                                    "value": {
+                                        "type": "string",
+                                        "required": False,
+                                        "description": "ETH value in hex (default: 0x0)"
+                                    },
+                                    "data": {
+                                        "type": "string",
+                                        "required": False,
+                                        "description": "Transaction data in hex (default: 0x)"
+                                    },
+                                    "gas": {
+                                        "type": "string",
+                                        "required": False,
+                                        "description": "Gas limit in hex (optional)"
+                                    },
+                                    "gas_price": {
+                                        "type": "string",
+                                        "required": False,
+                                        "description": "Gas price in hex (optional)"
+                                    }
+                                }
+                            },
+                            "output": {
+                                "type": "object",
+                                "description": "Transaction simulation result with success status and state changes"
+                            }
+                        }
                     }]
                 }
             )
