@@ -478,23 +478,7 @@ honoApp.post('/simulate-transaction-x402', async (c) => {
   }
 });
 
-// Register agent-kit entrypoint FIRST
-app.addEntrypoint({
-  key: 'simulate-transaction',
-  name: 'Simulate Transaction',
-  description: 'Simulate a transaction to preview outcomes before execution - gas costs, asset changes, and failure prediction',
-  price: '$0.03',
-  handler: async (ctx) => {
-    console.log('[AGENT-KIT] simulate-transaction handler called');
-    const input = ctx.input as SimulationRequest;
-    const result = await simulateTransaction(input);
-    return result;
-  },
-});
-
-console.log('[STARTUP] Agent-kit entrypoint registered ✓');
-
-// Middleware to intercept agent-kit's 402 response and add complete outputSchema
+// Middleware to intercept and enhance 402 responses - MUST be registered BEFORE entrypoint
 honoApp.use('/entrypoints/simulate-transaction/invoke', async (c, next) => {
   console.log('[MIDDLEWARE] Intercepting invoke endpoint');
 
@@ -624,6 +608,22 @@ honoApp.use('/entrypoints/simulate-transaction/invoke', async (c, next) => {
 });
 
 console.log('[STARTUP] Middleware to override outputSchema registered ✓');
+
+// Register agent-kit entrypoint AFTER middleware
+app.addEntrypoint({
+  key: 'simulate-transaction',
+  name: 'Simulate Transaction',
+  description: 'Simulate a transaction to preview outcomes before execution - gas costs, asset changes, and failure prediction',
+  price: '$0.03',
+  handler: async (ctx) => {
+    console.log('[AGENT-KIT] simulate-transaction handler called');
+    const input = ctx.input as SimulationRequest;
+    const result = await simulateTransaction(input);
+    return result;
+  },
+});
+
+console.log('[STARTUP] Agent-kit entrypoint registered ✓');
 
 // ============================================
 // STEP 4.6: Custom Routes (after agent-kit registration)
